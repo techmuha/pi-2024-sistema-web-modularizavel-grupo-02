@@ -7,7 +7,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`h-16 w-full rounded-3xl bg-orange-400 font-bold text-white ${className}`.trim()}
+      className={`h-16 w-full rounded-3xl bg-orange-400 font-bold text-white disabled:opacity-60 ${className}`.trim()}
     />
   );
 }

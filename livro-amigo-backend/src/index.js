@@ -11,14 +11,15 @@ const upload = multer({ storage: storage });
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, PATCH");
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept"
   );
-  bodyParser.json();
-  bodyParser.urlencoded({ extended: true });
   next();
 });
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", async (_, res) => {
   res.json("Hello Senac World! PI Grupo 2");
@@ -101,6 +102,42 @@ app.post("/books", upload.single("image"), async (req, res) => {
     res.status(201).json(newBook);
   } catch (err) {
     console.error("Erro ao adicionar livro:", err);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+app.patch("/books/:id", async (req, res) => {
+  const id = req.params.id;
+  const campos = req.body ? Object.keys(req.body) : [];
+
+  if (campos.length === 0) {
+    return res.status(400).json({
+      error: "Pelo menos um campo deve ser fornecido para atualização",
+    });
+  }
+
+  const valores = [];
+  const sets = campos.map((campo, index) => {
+    valores.push(req.body[campo]);
+    return `${campo} = $${index + 1}`;
+  });
+
+  const query = {
+    text: `UPDATE books SET ${sets.join(", ")} WHERE id = $${
+      campos.length + 1
+    } RETURNING *`,
+    values: [...valores, id],
+  };
+
+  try {
+    const { rows } = await pool.query(query);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Livro não encontrado" });
+    }
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("Erro ao atualizar livro:", err);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });

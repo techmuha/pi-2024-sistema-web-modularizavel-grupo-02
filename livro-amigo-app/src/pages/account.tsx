@@ -25,7 +25,11 @@ export function Account() {
             key={`my-books-item-${id}-${index}`}
             className="flex min-h-[25vh] overflow-hidden rounded-xl"
             onClick={() => {
-              navigate(`/livro/${id}`);
+              navigate(`/livro/${id}`, {
+                state: {
+                  is_owner: true,
+                },
+              });
             }}
           >
             <img

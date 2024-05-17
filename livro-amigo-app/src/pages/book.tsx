@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
-import { useFetchBook } from "@/http/hooks";
+import { useDeleteBook, useFetchBook, useUpdateBook } from "@/http/hooks";
 import { Heading } from "@/components/heading";
 
 import PlaceholderImage from "/images/placeholder-image.jpg";
@@ -10,14 +10,40 @@ import { Button } from "@/components/button";
 
 export function Book() {
   const navigate = useNavigate();
+  const location = useLocation();
   const params = useParams<{ id: string }>();
+
   const book = useFetchBook(params?.id ? Number(params.id) : undefined);
+  const deleteBook = useDeleteBook();
+  const update = useUpdateBook(book.data?.id);
 
   const handleLend = useCallback(() => {
-    localStorage.setItem("last-read", JSON.stringify(book.data));
-    navigate("/");
-    toast.success("Livro emprestado com sucesso.");
-  }, [book.data, navigate]);
+    update
+      .mutateAsync({
+        loaned: true,
+      })
+      .then(() => {
+        localStorage.setItem("last-read", JSON.stringify(book.data));
+        navigate("/");
+        toast.success("Livro emprestado com sucesso.");
+      });
+  }, [book.data, navigate, update]);
+
+  const handleReset = useCallback(() => {
+    update
+      .mutateAsync({
+        loaned: false,
+      })
+      .then(() => {
+        navigate("/conta");
+        toast.success("Livro atualizado com sucesso.");
+      });
+  }, [navigate, update]);
+
+  const handleDelete = useCallback(() => {
+    deleteBook.mutate(book.data?.id);
+    navigate("/conta");
+  }, [book.data?.id, deleteBook, navigate]);
 
   if (!book.data) return <p>Livro não encontrado.</p>;
 
@@ -31,6 +57,7 @@ export function Book() {
       />
 
       <img
+        className="w-full"
         src={
           book.data.image
             ? `data:image/png;base64,${book.data.image}`
@@ -51,9 +78,33 @@ export function Book() {
           em {book.data.location}
         </p>
 
-        <Button className="mt-12" type="submit" onClick={handleLend}>
-          Emprestar
-        </Button>
+        <div className="grid gap-6">
+          {!location.state?.is_owner && (
+            <Button
+              className="mt-12"
+              type="submit"
+              onClick={handleLend}
+              disabled={book.data.loaned}
+            >
+              {book.data.loaned ? "Emprestado" : "Emprestar"}
+            </Button>
+          )}
+
+          {location.state?.is_owner && (
+            <>
+              <Button
+                className="mt-12"
+                type="submit"
+                onClick={handleReset}
+                disabled={!book.data.loaned}
+              >
+                {book.data.loaned ? "Repor livro" : "Disponível"}
+              </Button>
+
+              <button onClick={handleDelete}>Excluir</button>
+            </>
+          )}
+        </div>
       </div>
     </main>
   );
