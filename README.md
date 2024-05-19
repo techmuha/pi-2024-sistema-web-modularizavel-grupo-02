@@ -10,7 +10,6 @@
 - Leonardo de Campos
 - Bruno Richards Bernardo dos Santos
 - Carlos Vinicius Castro Paulino
-- Giovanni Monteiro Pereira Walter
 
 ## Setup
 
